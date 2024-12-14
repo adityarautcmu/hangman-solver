@@ -1,0 +1,131 @@
+\documentclass{article}
+
+\setlength{\paperwidth}{21cm}   % A4
+\setlength{\paperheight}{29.7cm}% A4
+\setlength\topmargin{-0.5cm}    
+\setlength\oddsidemargin{0cm}   
+\setlength\textheight{24.7cm} 
+\setlength\textwidth{16.0cm}
+\setlength\columnsep{0.6cm}  
+\newlength\titlebox 
+\setlength\titlebox{5cm}
+\setlength\headheight{5pt}   
+\setlength\headsep{0pt}
+\pagestyle{plain}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[english]{babel}
+\usepackage[nottoc]{tocbibind}
+\usepackage{xurl}
+\usepackage[colorlinks,citecolor=blue,urlcolor=blue, linkcolor=black, bookmarks=false,hypertexnames=true]{hyperref}
+\usepackage{url}
+%\usepackage{libertine}
+\usepackage{float,multicol}
+\usepackage[toc,page]{appendix}
+\usepackage{graphicx, subcaption, caption}
+\usepackage{doi} % hyperlink URLs
+\renewcommand{\doi}{DOI:~}
+
+\newcommand\outauthor{
+	\begin{tabular}[t]{c}
+		\bf\@author
+	\end{tabular}
+}
+
+%Add keyword command
+\providecommand{\keywords}[1]
+{\small\textbf{Keywords:} #1 }
+
+\providecommand{\authorroles}[1]
+{\small\textbf{Author roles:} #1 }
+
+
+\usepackage[english]{babel}
+\usepackage[nottoc]{tocbibind}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,amscd, mathtools, bbm}
+\usepackage{lastpage}
+\usepackage{enumerate}
+\usepackage{fancyhdr}
+\usepackage{mathrsfs}
+\usepackage{graphicx, wrapfig, lipsum}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{centernot}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{fact}{Fact}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\sse}{\subseteq}
+\let\Pr\relax
+\DeclareMathOperator{\Pr}{\mathbb{P}}
+
+\title{\vspace{-60pt} LSTM Model for playing Hangman}
+
+\author{\vspace{-5pt}Aditya Raut}
+
+\date{\vspace{-5pt}September 11th, 2024}  
+
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+%\tableofcontents
+
+\vspace{-25pt}
+\section{Task description}
+The provided file \texttt{`words\_250000\_train.txt'} contains a total of 227,300 words made of small alphabet letters. The Jupyter notebook \texttt{Hangman\_run\_experiments.ipynb'} contains all the necessary functions to play Hangman games after loading a pre-trained model. The task is to maximize the win rate playing the game with 6 lives, i.e., you can make 6 incorrect letter guesses. 
+
+\vspace{-5pt}
+\section{Proposed strategy}
+I trained a bidirectional LSTM neural network created using PyTorch locally on a custom dataset created from the given word dictionary. The best model as per my judgment was used for predictions. 
+\begin{itemize}
+	\item \textbf{Dataset creation -} 
+	\begin{itemize}
+		\item For every \texttt{word} in given dictionary, I created 15 data points of `guessed made in the past'.
+		\item Every generated set of guesses has the following realistic game conditions -
+		\begin{itemize}
+			\item at least 1 letter remaining to guess correctly in the \texttt{word}
+			\item at most 5 incorrectly guessed letters (at most 5 lives lost)
+		\end{itemize}
+		\item Encode the `masked \texttt{word}' of length $n$ containing \_\_ symbols as a PyTorch tensor of size $n\times 27$, where each of the $n$ rows has $1$ at \texttt{ord(letter)-97} or at index \texttt{26} for \_\_ and $0$ everywhere else.
+		\item The ideal output of the model should be equal probability for all remaining letters in the \texttt{word}. 
+		\item Due to creating 15 different guesses per word, we have over 3.4 million data points. 
+	\end{itemize}
+	\item \textbf{Model architecture -}
+	\begin{itemize}
+		\item I used a bidirectional LSTM that first takes input of `masked \texttt{word}' encoded as above.
+		\begin{itemize}
+			\item LSTM has \texttt{num\_layers = 3, hidden\_size = 256, dropout = 0.2}
+		\end{itemize}
+		\item This LSTM gives output of size \texttt{512}, which is \texttt{2 * hidden\_size}.
+		\item We add a dropout layer of 0.4 before connecting this fully to a linear layer. 
+		\item We then concatenate a 1-0 indicator tensor of size 26 indicating all guesses made.
+		\item This tensor of size \texttt{538} is passed to a linear layer of dimensions \texttt{(538,128)}.
+		\item Another dropout layer with 0.4 value between fully connected layers.
+		\item Finally a linear layer of size \texttt{(128,26)}, which gives probabilities for all letters.
+	\end{itemize}
+	\item \textbf{Loss criterion -} \texttt{CrossEntropyLoss}, since this uses a \texttt{softmax} function to compare with labels.
+	\item \textbf{Training parameters -}
+	\begin{itemize}
+		
+		\item Random 9:1 ratio data split for training and validation, \texttt{batch\_size = 500}.		
+		\item ADAM Optimizer with initial \texttt{learning\_rate=1e-3}, \texttt{weight\_decay=1e-5}
+		\item StepLR scheduler that cuts learning rate by factor of $\frac{1}{2}$ every $10$ epochs. 
+		\item Trained for a total of 250 epochs.
+	\end{itemize}
+	\item \textbf{Final model and guess selection -}
+	\begin{itemize}
+		\item Model at epoch 241 had the least validation loss, and was selected for final submissions.
+		\item The highest probability un-guessed letter from the model is returned by \texttt{guess(self, word)}.
+	\end{itemize}
+\end{itemize}
+
+\vspace{-5pt}
+\section{Important files}
+\begin{enumerate}
+	\item \texttt{Hangman\_models\_training.ipynb} - Dataset creation and model training
+	\item \texttt{Hangman\_run\_experiments.ipynb} - to load pre-trained models and run on random or chosen words
+	\item \texttt{Hangman\_Strategy\_Aditya\_Raut.pdf} - This PDF, description of strategy
+\end{enumerate}
+Very large sized outputs in the training Jupyter notebook are cleared for better readability.
+
+\end{document}
