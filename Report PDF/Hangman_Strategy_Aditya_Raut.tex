@@ -72,7 +72,7 @@
 
 \vspace{-25pt}
 \section{Task description}
-The provided file \texttt{`words\_250000\_train.txt'} contains a total of 227,300 words made of small alphabet letters. The Jupyter notebook \texttt{Hangman\_run\_experiments.ipynb'} contains all the necessary functions to play Hangman games after loading a pre-trained model. The task is to maximize the win rate playing the game with 6 lives, i.e., you can make 6 incorrect letter guesses. 
+The provided file \texttt{`words\_250000\_train.txt'} contains a total of 227,300 words made of small alphabet letters. The Jupyter notebook \texttt{Hangman\_run\_experiments.ipynb'} contains all the necessary functions to play Hangman games after loading a pre-trained model. The task is to maximize the win rate playing the game with 6 lives, i.e., if you make 6 incorrect letter guesses you lose. 
 
 \vspace{-5pt}
 \section{Proposed strategy}
@@ -80,7 +80,7 @@ I trained a bidirectional LSTM neural network created using PyTorch locally on a
 \begin{itemize}
 	\item \textbf{Dataset creation -} 
 	\begin{itemize}
-		\item For every \texttt{word} in given dictionary, I created 15 data points of `guessed made in the past'.
+		\item For every \texttt{word} in given dictionary, I created 15 data points of `guesses made in the past'.
 		\item Every generated set of guesses has the following realistic game conditions -
 		\begin{itemize}
 			\item at least 1 letter remaining to guess correctly in the \texttt{word}
@@ -114,8 +114,8 @@ I trained a bidirectional LSTM neural network created using PyTorch locally on a
 	\end{itemize}
 	\item \textbf{Final model and guess selection -}
 	\begin{itemize}
-		\item Model at epoch 241 had the least validation loss, and was selected for final submissions.
-		\item The highest probability un-guessed letter from the model is returned by \texttt{guess(self, word)}.
+		\item Model at epoch 241 had the least validation loss, and was selected for final predictions.
+		\item The highest probability un-guessed letter from the model is used as the next guess.
 	\end{itemize}
 \end{itemize}
 
